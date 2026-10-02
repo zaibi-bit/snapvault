@@ -322,7 +322,7 @@ $("platGrid").querySelectorAll(".plat").forEach(el => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 });
-renderTabs();
+selectPlatform(null);
 
 urlInput.addEventListener("input", () => {
   const p = detectPlatform(urlInput.value.trim());
