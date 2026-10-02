@@ -229,18 +229,26 @@ $("modeSeg").querySelectorAll("button").forEach(b => {
   };
 });
 
+const INSTANCES = ["https://rue-cobalt.xenon.zone"];
+
 /* ---------- server status ---------- */
+// Probe the download server directly from the visitor's browser — that's the
+// path the app actually uses, so this is the honest signal.
 (async () => {
   try {
-    const r = await fetch("/api/resolve", { cache: "no-store" });
-    const d = await r.json();
-    if (d.status === "ok") {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 12000);
+    const r = await fetch(INSTANCES[0] + "/", { cache: "no-store", signal: ctl.signal });
+    clearTimeout(t);
+    if (r.ok || r.status === 405) {
       $("dot").className = "dot on";
-      $("statusText").textContent = "server online · " + (d.services ? d.services.length + " platforms" : "");
-    } else throw 0;
+      $("statusText").textContent = "server online · 20 platforms";
+      return;
+    }
+    throw 0;
   } catch {
     $("dot").className = "dot off";
-    $("statusText").textContent = "server unreachable";
+    $("statusText").textContent = "server unreachable — try again in a bit";
   }
 })();
 
@@ -301,7 +309,6 @@ renderHist();
 // The browser talks to the download servers directly (their IPs don't block
 // home/mobile connections the way they block datacenter IPs). The Vercel
 // function at /api/resolve is kept as a last-resort fallback.
-const INSTANCES = ["https://rue-cobalt.xenon.zone"];
 
 function postJson(url, body, ms) {
   const ctl = new AbortController();
