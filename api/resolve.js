@@ -6,6 +6,8 @@
 
 const INSTANCES = [
   "https://rue-cobalt.xenon.zone",
+  "https://api.cobalt.liubquanti.click",
+  "https://cobaltapi.cjs.nz",
 ];
 
 const FETCH_TIMEOUT_MS = 45000;
