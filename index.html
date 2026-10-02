@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnapVault — Download Videos from YouTube, TikTok, Instagram & More</title>
+<meta name="description" content="SnapVault: free social video downloader. Paste a link from YouTube, TikTok, Instagram, X, Facebook, Reddit and 15+ platforms, pick quality, download.">
+<style>
+:root{
+  --bg:#0a0e14; --panel:#10151d; --panel2:#151c27; --border:#1f2937;
+  --text:#e8eef5; --muted:#8b98a9; --mint:#00e5a0; --violet:#7c5cff;
+  --red:#ff5d5d; --amber:#ffb020;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;line-height:1.6;min-height:100vh}
+a{color:var(--mint)}
+.wrap{max-width:920px;margin:0 auto;padding:0 20px}
+header.top{display:flex;align-items:center;justify-content:space-between;padding:18px 0;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:.3px}
+.logo .bolt{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--mint),var(--violet));display:flex;align-items:center;justify-content:center;font-size:19px}
+.status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);background:var(--panel);border:1px solid var(--border);padding:7px 14px;border-radius:999px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.dot.on{background:var(--mint);box-shadow:0 0 8px var(--mint)}
+.dot.off{background:var(--red);box-shadow:0 0 8px var(--red)}
+.hero{text-align:center;padding:52px 0 30px}
+.hero h1{font-size:clamp(30px,5vw,46px);font-weight:800;line-height:1.15;margin-bottom:12px}
+.hero h1 .grad{background:linear-gradient(90deg,var(--mint),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--muted);font-size:17px;max-width:620px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:26px;margin:26px 0;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.urlrow{display:flex;gap:10px}
+.urlwrap{position:relative;flex:1}
+#url{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:16px;padding:15px 16px;outline:none;transition:border .2s}
+#url:focus{border-color:var(--mint)}
+#platBadge{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;background:rgba(0,229,160,.12);color:var(--mint);border:1px solid rgba(0,229,160,.35);padding:4px 10px;border-radius:999px;display:none;white-space:nowrap}
+.btn{border:none;cursor:pointer;font-weight:700;border-radius:12px;font-size:15px;padding:0 22px;transition:transform .12s,opacity .2s;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn-paste{background:var(--panel2);color:var(--text);border:1px solid var(--border)}
+.btn-go{background:linear-gradient(135deg,var(--mint),#00b8d4);color:#04231a;font-size:17px;padding:15px 34px;margin-top:16px;width:100%}
+.btn-go:disabled{opacity:.55;cursor:wait}
+.btn-dl{background:linear-gradient(135deg,var(--mint),#00b8d4);color:#04231a;padding:13px 26px;font-size:16px}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);padding:12px 18px;font-size:14px}
+.opts{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;align-items:center}
+.seg{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.seg button{background:transparent;border:none;color:var(--muted);padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer}
+.seg button.active{background:linear-gradient(135deg,rgba(0,229,160,.25),rgba(124,92,255,.25));color:var(--text)}
+select{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:10px 14px;font-size:14px;outline:none}
+.optlabel{font-size:13px;color:var(--muted)}
+#stage{margin-top:18px;display:none}
+.step{display:flex;align-items:center;gap:12px;padding:10px 0;font-size:15px;color:var(--muted)}
+.step .spin{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--mint);border-radius:50%;animation:sp 0.8s linear infinite;flex-shrink:0}
+@keyframes sp{to{transform:rotate(360deg)}}
+.step.done{color:var(--text)}
+.step.done .spin{border:none;animation:none}
+.step.done .spin::before{content:"✓";color:var(--mint);font-weight:800}
+.step.fail{color:var(--red)}
+.progress{height:10px;background:var(--bg);border:1px solid var(--border);border-radius:999px;overflow:hidden;margin-top:8px}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--mint),var(--violet));transition:width .2s}
+#result{display:none;margin-top:18px;background:var(--panel2);border:1px solid rgba(0,229,160,.3);border-radius:14px;padding:20px}
+#result .fname{font-weight:700;font-size:16px;word-break:break-all;margin-bottom:4px}
+#result .meta{font-size:13px;color:var(--muted);margin-bottom:14px}
+#result .row{display:flex;gap:10px;flex-wrap:wrap}
+#error{display:none;margin-top:18px;background:rgba(255,93,93,.08);border:1px solid rgba(255,93,93,.4);border-radius:14px;padding:16px 20px;font-size:15px}
+#error b{color:var(--red)}
+#picker{display:none;margin-top:18px}
+#picker .pitem{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:10px}
+#picker .pitem img{width:72px;height:72px;object-fit:cover;border-radius:8px;background:var(--bg)}
+#picker .pitem .t{flex:1;font-size:14px}
+h2.sec{font-size:22px;margin:44px 0 6px}
+p.sub{color:var(--muted);font-size:15px;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.plat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;font-size:14px;font-weight:600}
+.plat small{display:block;color:var(--muted);font-weight:400;font-size:12px;margin-top:2px}
+.hist-item{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:10px;font-size:14px}
+.hist-item .f{flex:1;min-width:0}
+.hist-item .f .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-item .f .u{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-item button{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer}
+.hist-item .x{background:transparent;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:6px}
+.empty{color:var(--muted);font-size:14px;text-align:center;padding:22px;border:1px dashed var(--border);border-radius:12px}
+.steps3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.steps3 .s{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px}
+.steps3 .s .n{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--mint),var(--violet));color:#04231a;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.steps3 .s b{display:block;margin-bottom:4px}
+.steps3 .s p{font-size:14px;color:var(--muted)}
+.faq{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:10px}
+.faq b{display:block;margin-bottom:4px;font-size:15px}
+.faq p{font-size:14px;color:var(--muted)}
+footer{border-top:1px solid var(--border);margin-top:56px;padding:26px 0 40px;color:var(--muted);font-size:13px;text-align:center}
+footer .fair{max-width:640px;margin:0 auto 12px;background:rgba(255,176,32,.06);border:1px solid rgba(255,176,32,.3);border-radius:12px;padding:14px 18px;text-align:left}
+@media(max-width:600px){.urlrow{flex-direction:column}.btn-paste{padding:13px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="logo"><span class="bolt">⬇</span> SnapVault</div>
+  <div class="status"><span class="dot" id="dot"></span><span id="statusText">checking server…</span></div>
+</header>
+
+<div class="hero">
+  <h1>Download videos from <span class="grad">anywhere</span></h1>
+  <p>Paste a link from YouTube, TikTok, Instagram, X, Facebook, Reddit and 15+ more platforms. Pick video or MP3 audio, choose quality, hit download. Free, no sign-up, no watermark.</p>
+</div>
+
+<div class="card">
+  <div class="urlrow">
+    <div class="urlwrap">
+      <input id="url" type="url" placeholder="Paste a video link here…  (e.g. youtube.com, tiktok.com, instagram.com)" autocomplete="off" spellcheck="false">
+      <span id="platBadge"></span>
+    </div>
+    <button class="btn btn-paste" id="pasteBtn" title="Paste from clipboard">📋 Paste</button>
+  </div>
+  <div class="opts">
+    <div class="seg" id="modeSeg">
+      <button data-mode="auto" class="active">🎬 Video</button>
+      <button data-mode="audio">🎵 Audio (MP3)</button>
+    </div>
+    <span id="qualityWrap"><span class="optlabel">Quality </span>
+      <select id="quality">
+        <option value="max">Best available</option>
+        <option value="2160">4K (2160p)</option>
+        <option value="1440">1440p</option>
+        <option value="1080" selected>1080p</option>
+        <option value="720">720p</option>
+        <option value="480">480p</option>
+        <option value="360">360p</option>
+      </select>
+    </span>
+    <span id="fmtWrap" style="display:none"><span class="optlabel">Format </span>
+      <select id="audioFmt">
+        <option value="mp3" selected>MP3</option>
+        <option value="ogg">OGG</option>
+        <option value="wav">WAV</option>
+        <option value="opus">OPUS</option>
+      </select>
+    </span>
+  </div>
+  <button class="btn btn-go" id="goBtn">⬇ Fetch Download</button>
+  <div id="stage"></div>
+  <div id="result"></div>
+  <div id="picker"></div>
+  <div id="error"></div>
+</div>
+
+<h2 class="sec">📜 Recent downloads</h2>
+<p class="sub">Saved only in this browser — nothing is uploaded or tracked.</p>
+<div id="history"></div>
+
+<h2 class="sec">🌐 Supported platforms</h2>
+<p class="sub">20 services, straight from the downloader engine's live capability list.</p>
+<div class="grid" id="platGrid"></div>
+
+<h2 class="sec">⚡ How it works</h2>
+<p class="sub">Three steps. No accounts, no extensions, no watermarks.</p>
+<div class="steps3">
+  <div class="s"><div class="n">1</div><b>Copy the link</b><p>Grab the URL of any public video, reel, short, or post.</p></div>
+  <div class="s"><div class="n">2</div><b>Paste & pick</b><p>Drop it above, choose video or MP3 audio and your quality.</p></div>
+  <div class="s"><div class="n">3</div><b>Download</b><p>The file is fetched and saved straight to your device.</p></div>
+</div>
+
+<h2 class="sec">❓ FAQ</h2>
+<div class="faq"><b>Is it really free? Any limits?</b><p>Yes — free, no sign-up. The engine is community-run, so if one server is busy SnapVault automatically tries another.</p></div>
+<div class="faq"><b>Why did my link fail?</b><p>Private, login-only, or deleted posts can't be fetched — only public content works. Age-restricted YouTube videos may also fail.</p></div>
+<div class="faq"><b>Does TikTok keep its watermark?</b><p>No — TikTok downloads come watermark-free by default.</p></div>
+<div class="faq"><b>Where do my files go?</b><p>Straight to your device's normal download folder. Your history stays in this browser only.</p></div>
+
+<footer>
+  <div class="fair">⚖️ <b>Fair-use note:</b> only download videos you have the right to save — your own content, or content the creator allows to be downloaded. Respect creators and their work.</div>
+  <div>SnapVault · powered by the open-source cobalt engine · made for offline viewing</div>
+</footer>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const urlInput = $("url"), platBadge = $("platBadge"), goBtn = $("goBtn");
+const stage = $("stage"), resultBox = $("result"), errorBox = $("error"), pickerBox = $("picker");
+
+/* ---------- platform detection ---------- */
+const PLATFORMS = [
+  { name: "YouTube",   re: /(youtube\.com|youtu\.be|music\.youtube)/i,  note: "videos · shorts · music" },
+  { name: "TikTok",    re: /tiktok\.com/i,                              note: "no watermark" },
+  { name: "Instagram", re: /instagram\.com/i,                           note: "reels · posts · stories" },
+  { name: "X / Twitter", re: /(twitter\.com|x\.com)/i,                  note: "videos · gifs" },
+  { name: "Facebook",  re: /(facebook\.com|fb\.watch)/i,                note: "public videos" },
+  { name: "Reddit",    re: /reddit\.com/i,                             note: "videos · gifs" },
+  { name: "Pinterest", re: /(pinterest\.com|pin\.it)/i,                 note: "videos · images" },
+  { name: "Vimeo",     re: /vimeo\.com/i,                              note: "videos" },
+  { name: "Twitch",    re: /twitch\.tv/i,                              note: "clips" },
+  { name: "SoundCloud",re: /soundcloud\.com/i,                         note: "audio" },
+  { name: "Dailymotion", re: /dailymotion\.com/i,                      note: "videos" },
+  { name: "Snapchat",  re: /snapchat\.com/i,                           note: "spotlight · stories" },
+  { name: "Streamable",re: /streamable\.com/i,                         note: "videos" },
+  { name: "Tumblr",    re: /tumblr\.com/i,                             note: "videos" },
+  { name: "VK",        re: /vk\.com/i,                                 note: "videos · clips" },
+  { name: "Bilibili",  re: /bilibili\.(com|tv)/i,                       note: "videos" },
+  { name: "Rutube",    re: /rutube\.ru/i,                              note: "videos" },
+  { name: "Loom",      re: /loom\.com/i,                               note: "videos" },
+  { name: "Bluesky",   re: /bsky\.app/i,                               note: "videos" },
+  { name: "OK",        re: /ok\.ru/i,                                  note: "videos" },
+];
+function detectPlatform(u) {
+  for (const p of PLATFORMS) if (p.re.test(u)) return p;
+  return null;
+}
+$("platGrid").innerHTML = PLATFORMS.map(p =>
+  `<div class="plat">${p.name}<small>${p.note}</small></div>`).join("");
+
+urlInput.addEventListener("input", () => {
+  const p = detectPlatform(urlInput.value.trim());
+  if (p) { platBadge.textContent = p.name; platBadge.style.display = "block"; }
+  else platBadge.style.display = "none";
+});
+$("pasteBtn").onclick = async () => {
+  try {
+    const t = await navigator.clipboard.readText();
+    if (t) { urlInput.value = t.trim(); urlInput.dispatchEvent(new Event("input")); }
+  } catch { urlInput.focus(); }
+};
+
+/* ---------- mode / quality toggles ---------- */
+let mode = "auto";
+$("modeSeg").querySelectorAll("button").forEach(b => {
+  b.onclick = () => {
+    $("modeSeg").querySelectorAll("button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    mode = b.dataset.mode;
+    $("qualityWrap").style.display = mode === "audio" ? "none" : "";
+    $("fmtWrap").style.display = mode === "audio" ? "" : "none";
+  };
+});
+
+/* ---------- server status ---------- */
+(async () => {
+  try {
+    const r = await fetch("/api/resolve", { cache: "no-store" });
+    const d = await r.json();
+    if (d.status === "ok") {
+      $("dot").className = "dot on";
+      $("statusText").textContent = "server online · " + (d.services ? d.services.length + " platforms" : "");
+    } else throw 0;
+  } catch {
+    $("dot").className = "dot off";
+    $("statusText").textContent = "server unreachable";
+  }
+})();
+
+/* ---------- friendly error messages ---------- */
+const ERRORS = {
+  "error.api.content.post.unavailable": "That post is private, deleted, or unavailable. Only public posts can be downloaded.",
+  "error.api.link.invalid": "That link doesn't look like a valid video URL. Double-check it and try again.",
+  "error.api.content.video.unavailable": "This video isn't available (it may be age-restricted, region-blocked, or removed).",
+  "error.api.content.video.live": "Live streams can't be downloaded — only finished videos.",
+  "error.api.auth.jwt.missing": "Backend auth hiccup — trying another server…",
+  "invalid url": "Please paste a valid http(s) link first.",
+  "all instances failed": "All download servers are busy right now. Wait a minute and try again.",
+};
+function friendly(code) {
+  return ERRORS[code] || ("Download failed (" + code + "). Try again in a bit.");
+}
+
+/* ---------- stage UI ---------- */
+function setStage(html) { stage.style.display = "block"; stage.innerHTML = html; }
+function stepRow(id, label, state) {
+  return `<div class="step ${state}" id="st-${id}"><span class="spin"></span>${label}</div>`;
+}
+function markStep(id, state) {
+  const el = $("st-" + id);
+  if (el) el.className = "step " + state;
+}
+
+/* ---------- history ---------- */
+const HKEY = "snapvault_history";
+function getHist() { try { return JSON.parse(localStorage.getItem(HKEY) || "[]"); } catch { return []; } }
+function saveHist(h) { try { localStorage.setItem(HKEY, JSON.stringify(h.slice(0, 12))); } catch {} }
+function addHist(entry) {
+  const h = getHist().filter(x => x.url !== entry.url);
+  h.unshift(entry); saveHist(h); renderHist();
+}
+function renderHist() {
+  const h = getHist(), box = $("history");
+  if (!h.length) { box.innerHTML = `<div class="empty">Nothing here yet — your downloads will appear here.</div>`; return; }
+  box.innerHTML = h.map((x, i) => `
+    <div class="hist-item">
+      <div class="f"><div class="n">⬇ ${esc(x.filename)}</div><div class="u">${esc(x.platform)} · ${new Date(x.time).toLocaleString()}</div></div>
+      <button data-re="${i}">↻ Re-fetch</button>
+      <button class="x" data-del="${i}" title="Remove">✕</button>
+    </div>`).join("");
+  box.querySelectorAll("[data-re]").forEach(b => b.onclick = () => {
+    urlInput.value = getHist()[+b.dataset.re].url;
+    urlInput.dispatchEvent(new Event("input"));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  box.querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
+    const hh = getHist(); hh.splice(+b.dataset.del, 1); saveHist(hh); renderHist();
+  });
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+renderHist();
+
+/* ---------- resolve + download ---------- */
+async function resolveLink(url) {
+  const r = await fetch("/api/resolve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      url,
+      downloadMode: mode,
+      videoQuality: $("quality").value,
+      audioFormat: $("audioFmt").value,
+    }),
+  });
+  return r.json();
+}
+
+async function downloadWithProgress(fileUrl, filename) {
+  setStage(stepRow("dl", "Downloading — hang tight…", "") + `<div class="progress"><i id="bar"></i></div><div class="step" id="pct" style="font-size:13px"></div>`);
+  try {
+    const resp = await fetch(fileUrl);
+    if (!resp.ok) throw new Error("http " + resp.status);
+    const total = parseInt(resp.headers.get("content-length") || "0", 10);
+    const reader = resp.body.getReader();
+    const chunks = [];
+    let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value); got += value.length;
+      if (total) {
+        const p = Math.min(100, Math.round(got / total * 100));
+        $("bar").style.width = p + "%";
+        $("pct").textContent = p + "% · " + (got / 1048576).toFixed(1) + " MB" + (total ? " of " + (total / 1048576).toFixed(1) + " MB" : "");
+      } else {
+        $("pct").textContent = (got / 1048576).toFixed(1) + " MB downloaded…";
+      }
+    }
+    const blob = new Blob(chunks);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    markStep("dl", "done");
+    $("pct").textContent = "Done — saved to your downloads.";
+    return true;
+  } catch (e) {
+    // Fallback: let the browser handle it directly in a new tab.
+    window.open(fileUrl, "_blank", "noopener");
+    markStep("dl", "done");
+    $("pct").textContent = "Opened in a new tab — use your browser's save option there.";
+    return true;
+  }
+}
+
+function showResult(d, url) {
+  const p = detectPlatform(url);
+  resultBox.style.display = "block";
+  resultBox.innerHTML = `
+    <div class="fname">📁 ${esc(d.filename)}</div>
+    <div class="meta">${p ? esc(p.name) : "Video"} · ${mode === "audio" ? "MP3 audio" : $("quality").value === "max" ? "best quality" : $("quality").value + "p"} · ready</div>
+    <div class="row">
+      <button class="btn btn-dl" id="dlNow">⬇ Download now</button>
+      <button class="btn btn-ghost" id="copyLink">🔗 Copy direct link</button>
+    </div>`;
+  $("dlNow").onclick = () => downloadWithProgress(d.url, d.filename);
+  $("copyLink").onclick = async () => {
+    try { await navigator.clipboard.writeText(d.url); $("copyLink").textContent = "✓ Copied!"; }
+    catch { prompt("Copy this link:", d.url); }
+  };
+  addHist({ url, filename: d.filename, platform: p ? p.name : "Video", time: Date.now() });
+}
+
+function showPicker(d, url) {
+  pickerBox.style.display = "block";
+  pickerBox.innerHTML = `<p class="sub" style="margin-bottom:10px">This post has multiple files — pick one:</p>` +
+    d.picker.map((it, i) => `
+      <div class="pitem">
+        ${it.thumb ? `<img src="${esc(it.thumb)}" alt="">` : ""}
+        <div class="t">${esc(it.filename || ("file " + (i + 1)))}</div>
+        <button class="btn btn-dl" style="padding:9px 18px;font-size:14px" data-pick="${i}">⬇</button>
+      </div>`).join("");
+  pickerBox.querySelectorAll("[data-pick]").forEach(b => b.onclick = () => {
+    const it = d.picker[+b.dataset.pick];
+    showResult({ filename: it.filename || "download", url: it.url }, url);
+    pickerBox.style.display = "none";
+  });
+}
+
+goBtn.onclick = async () => {
+  const url = urlInput.value.trim();
+  resultBox.style.display = "none"; pickerBox.style.display = "none"; errorBox.style.display = "none";
+  if (!url || !/^https?:\/\//i.test(url)) {
+    errorBox.style.display = "block";
+    errorBox.innerHTML = "<b>⚠ Hold on.</b> Paste a valid video link first.";
+    return;
+  }
+  goBtn.disabled = true;
+  setStage(stepRow("rs", "Resolving link…", ""));
+  try {
+    const d = await resolveLink(url);
+    if (d.status === "error") throw new Error(d.code || "unknown");
+    markStep("rs", "done");
+    if (d.status === "picker" && d.picker && d.picker.length) {
+      setStage(stepRow("rs", "Link resolved — multiple files found.", "done"));
+      showPicker(d, url);
+    } else if (d.url) {
+      showResult(d, url);
+      // Auto-start the download, like every good downloader should.
+      await downloadWithProgress(d.url, d.filename);
+    } else {
+      throw new Error("empty response");
+    }
+  } catch (e) {
+    markStep("rs", "fail");
+    errorBox.style.display = "block";
+    errorBox.innerHTML = "<b>⚠ Couldn't fetch that.</b> " + esc(friendly(e.message));
+  } finally {
+    goBtn.disabled = false;
+  }
+};
+urlInput.addEventListener("keydown", (e) => { if (e.key === "Enter") goBtn.click(); });
+</script>
+</body>
+</html>
