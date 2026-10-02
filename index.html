@@ -102,6 +102,14 @@ p.sub{color:var(--muted);font-size:15px;margin-bottom:18px}
 .faq p{font-size:14px;color:var(--muted)}
 .adslot{display:flex;justify-content:center;align-items:center;margin:30px 0;overflow:hidden}
 .adslot:empty{display:none}
+.plat-title{font-size:23px;font-weight:800;text-align:center;margin-bottom:14px}
+.ptabs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:8px}
+.ptab{background:var(--panel2);border:1px solid var(--border);color:var(--muted);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s}
+.ptab:hover{color:var(--text);border-color:var(--mint)}
+.ptab.active{color:#fff;border-color:transparent}
+.plat-tip{text-align:center;color:var(--muted);font-size:13px;min-height:20px;margin-bottom:16px}
+.plat{cursor:pointer;transition:border .15s,transform .15s}
+.plat:hover{border-color:var(--mint);transform:translateY(-2px)}
 footer{border-top:1px solid var(--border);margin-top:56px;padding:26px 0 40px;color:var(--muted);font-size:13px;text-align:center}
 footer .fair{max-width:640px;margin:0 auto 12px;background:rgba(255,176,32,.06);border:1px solid rgba(255,176,32,.3);border-radius:12px;padding:14px 18px;text-align:left}
 @media(max-width:600px){.urlrow{flex-direction:column}.btn-paste{padding:13px}}
@@ -121,6 +129,9 @@ footer .fair{max-width:640px;margin:0 auto 12px;background:rgba(255,176,32,.06);
 </div>
 
 <div class="card">
+  <h2 class="plat-title" id="platTitle">Download videos from anywhere</h2>
+  <div class="ptabs" id="platTabs"></div>
+  <p class="plat-tip" id="platTip"></p>
   <div class="urlrow">
     <div class="urlwrap">
       <input id="url" type="url" placeholder="Paste a video link here…  (e.g. youtube.com, tiktok.com, instagram.com)" autocomplete="off" spellcheck="false">
@@ -255,12 +266,71 @@ function detectPlatform(u) {
   for (const p of PLATFORMS) if (p.re.test(u)) return p;
   return null;
 }
+/* ---------- per-platform named sections ---------- */
+const PLAT_TABS = [
+  { name: "YouTube",   title: "Download YouTube Videos",    ph: "Paste a YouTube link… (video or Shorts URL)", tip: "Download YouTube videos and Shorts in up to 4K MP4, or grab MP3 audio.", color: "#ff0033" },
+  { name: "TikTok",    title: "Download TikTok Videos",     ph: "Paste a TikTok link…", tip: "Download TikTok videos without watermark in HD.", color: "#00b8a9" },
+  { name: "Instagram", title: "Download Instagram Reels",   ph: "Paste an Instagram link… (Reel, post or story)", tip: "Save Instagram Reels, posts and stories as video files.", color: "#e1306c" },
+  { name: "Facebook",  title: "Download Facebook Videos",   ph: "Paste a Facebook link…", tip: "Download public Facebook videos and Reels.", color: "#1877f2" },
+  { name: "X",         title: "Download X Videos",          ph: "Paste an X / Twitter link…", tip: "Download videos and GIFs from X posts.", color: "#e7e9ea" },
+  { name: "Reddit",    title: "Download Reddit Videos",     ph: "Paste a Reddit link…", tip: "Download Reddit videos and GIFs.", color: "#ff4500" },
+  { name: "Pinterest", title: "Download Pinterest Videos",  ph: "Paste a Pinterest link…", tip: "Download Pinterest videos and images.", color: "#e60023" },
+  { name: "Vimeo",     title: "Download Vimeo Videos",      ph: "Paste a Vimeo link…", tip: "Download Vimeo videos in high quality.", color: "#1ab7ea" },
+  { name: "Twitch",    title: "Download Twitch Clips",      ph: "Paste a Twitch clip link…", tip: "Download Twitch clips as MP4.", color: "#9146ff" },
+  { name: "Dailymotion", title: "Download Dailymotion Videos", ph: "Paste a Dailymotion link…", tip: "Download Dailymotion videos free.", color: "#00aaff" },
+];
+const DEFAULT_PH = "Paste a video link here…  (e.g. youtube.com, tiktok.com, instagram.com)";
+let activePlat = null;
+function tabForGridName(gname) {
+  return PLAT_TABS.find(t => gname === t.name || gname.split(" ")[0] === t.name) || null;
+}
+function selectPlatform(name) {
+  activePlat = name;
+  const p = PLAT_TABS.find(x => x.name === name);
+  if (p) {
+    $("platTitle").textContent = p.title;
+    urlInput.placeholder = p.ph;
+    $("platTip").textContent = p.tip;
+  } else {
+    $("platTitle").textContent = "Download videos from anywhere";
+    urlInput.placeholder = DEFAULT_PH;
+    $("platTip").textContent = "";
+  }
+  renderTabs();
+}
+function renderTabs() {
+  const box = $("platTabs");
+  box.innerHTML = `<button class="ptab${!activePlat ? " active" : ""}" data-p="__all">🌐 All</button>` +
+    PLAT_TABS.map(p => `<button class="ptab${activePlat === p.name ? " active" : ""}" data-p="${p.name}">${p.name}</button>`).join("");
+  box.querySelectorAll(".ptab").forEach(b => {
+    const name = b.dataset.p === "__all" ? null : b.dataset.p;
+    const p = PLAT_TABS.find(x => x.name === name);
+    if (name && b.classList.contains("active") && p) {
+      b.style.background = p.color;
+      b.style.color = (p.name === "X") ? "#000" : "#fff";
+    }
+    b.onclick = () => selectPlatform(name);
+  });
+}
 $("platGrid").innerHTML = PLATFORMS.map(p =>
-  `<div class="plat">${p.name}<small>${p.note}</small></div>`).join("");
+  `<div class="plat" data-pg="${p.name}">${p.name}<small>${p.note}</small></div>`).join("");
+$("platGrid").querySelectorAll(".plat").forEach(el => {
+  el.title = "Select " + el.dataset.pg;
+  el.onclick = () => {
+    const t = tabForGridName(el.dataset.pg);
+    selectPlatform(t ? t.name : null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+});
+renderTabs();
 
 urlInput.addEventListener("input", () => {
   const p = detectPlatform(urlInput.value.trim());
-  if (p) { platBadge.textContent = p.name; platBadge.style.display = "block"; }
+  if (p) {
+    platBadge.textContent = p.name; platBadge.style.display = "block";
+    const t = tabForGridName(p.name);
+    if (t && activePlat !== t.name) selectPlatform(t.name);
+  }
   else platBadge.style.display = "none";
 });
 $("pasteBtn").onclick = async () => {
