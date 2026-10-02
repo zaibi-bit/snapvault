@@ -298,18 +298,57 @@ function esc(s) { return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&
 renderHist();
 
 /* ---------- resolve + download ---------- */
-async function resolveLink(url) {
-  const r = await fetch("/api/resolve", {
+// The browser talks to the download servers directly (their IPs don't block
+// home/mobile connections the way they block datacenter IPs). The Vercel
+// function at /api/resolve is kept as a last-resort fallback.
+const INSTANCES = ["https://rue-cobalt.xenon.zone"];
+
+function postJson(url, body, ms) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), ms || 60000);
+  return fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      url,
-      downloadMode: mode,
-      videoQuality: $("quality").value,
-      audioFormat: $("audioFmt").value,
-    }),
-  });
-  return r.json();
+    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: ctl.signal,
+  }).finally(() => clearTimeout(t)).then(r => r.json());
+}
+
+const CONTENT_ERRORS = new Set([
+  "error.api.content.post.unavailable",
+  "error.api.content.video.unavailable",
+  "error.api.content.video.live",
+  "error.api.link.invalid",
+]);
+
+async function resolveLink(url) {
+  const body = {
+    url,
+    downloadMode: mode,
+    videoQuality: $("quality").value,
+    audioFormat: $("audioFmt").value,
+  };
+  let lastErr = null;
+  for (const base of INSTANCES) {
+    try {
+      const d = await postJson(base + "/", body);
+      if (d.url) return d;                                    // success
+      const code = (d.error && d.error.code) || d.error || "unknown";
+      if (CONTENT_ERRORS.has(code)) return d;                 // private/deleted — no point retrying
+      lastErr = code;
+    } catch (e) { lastErr = "network"; }
+  }
+  try {                                                      // server-side fallback
+    const r = await fetch("/api/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (d.url) return d;
+    lastErr = (d.error && d.error.code) || d.error || lastErr || "unknown";
+  } catch (e) {}
+  return { status: "error", error: lastErr || "all instances failed" };
 }
 
 async function downloadWithProgress(fileUrl, filename) {
@@ -397,7 +436,7 @@ goBtn.onclick = async () => {
   setStage(stepRow("rs", "Resolving link…", ""));
   try {
     const d = await resolveLink(url);
-    if (d.status === "error") throw new Error(d.code || "unknown");
+    if (d.status === "error") throw new Error((d.error && d.error.code) || d.error || d.code || "unknown");
     markStep("rs", "done");
     if (d.status === "picker" && d.picker && d.picker.length) {
       setStage(stepRow("rs", "Link resolved — multiple files found.", "done"));

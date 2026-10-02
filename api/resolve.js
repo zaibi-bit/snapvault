@@ -1,11 +1,11 @@
-// SnapVault backend: resolves a social video URL into a direct download link.
-// Proxies the open-source cobalt API through community instances (no key needed).
-// The browser downloads the file directly from the returned tunnel/redirect URL,
-// so video bytes never flow through Vercel.
+// SnapVault backend: fallback resolver. The web app normally talks to the
+// cobalt instances directly from the visitor's browser (their home/mobile IPs
+// aren't blocked the way datacenter IPs are). This function is the last-resort
+// fallback, and also serves the live health check.
+// Only instances that accept keyless requests are listed here.
 
 const INSTANCES = [
   "https://rue-cobalt.xenon.zone",
-  "https://cobalt-api.meowing.de",
 ];
 
 const FETCH_TIMEOUT_MS = 45000;
