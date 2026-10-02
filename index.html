@@ -326,11 +326,7 @@ selectPlatform(null);
 
 urlInput.addEventListener("input", () => {
   const p = detectPlatform(urlInput.value.trim());
-  if (p) {
-    platBadge.textContent = p.name; platBadge.style.display = "block";
-    const t = tabForGridName(p.name);
-    if (t && activePlat !== t.name) selectPlatform(t.name);
-  }
+  if (p) { platBadge.textContent = p.name; platBadge.style.display = "block"; }
   else platBadge.style.display = "none";
 });
 $("pasteBtn").onclick = async () => {
@@ -577,6 +573,13 @@ goBtn.onclick = async () => {
   if (!url || !/^https?:\/\//i.test(url)) {
     errorBox.style.display = "block";
     errorBox.innerHTML = "<b>⚠ Hold on.</b> Paste a valid video link first.";
+    return;
+  }
+  const detected = detectPlatform(url);
+  const dtab = detected ? tabForGridName(detected.name) : null;
+  if (dtab && dtab.name !== activePlat) {
+    errorBox.style.display = "block";
+    errorBox.innerHTML = "<b>⚠ Platform mismatch.</b> " + esc("You selected " + activePlat + " but pasted a " + dtab.name + " link. Tap the " + dtab.name + " tab above, or paste a " + activePlat + " link instead.");
     return;
   }
   goBtn.disabled = true;
