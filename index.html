@@ -433,6 +433,11 @@ async function downloadWithProgress(fileUrl, filename) {
       }
     }
     const blob = new Blob(chunks);
+    if (got === 0) {
+      // The engine returned an empty file (e.g. YouTube temporarily blocking
+      // downloads on its end). Never claim success for a 0-byte file.
+      throw new Error("empty-file");
+    }
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = filename;
@@ -442,6 +447,13 @@ async function downloadWithProgress(fileUrl, filename) {
     $("pct").textContent = "Done — saved to your downloads.";
     return true;
   } catch (e) {
+    if (e && e.message === "empty-file") {
+      markStep("dl", "fail");
+      const pct = $("pct"); if (pct) pct.textContent = "";
+      errorBox.style.display = "block";
+      errorBox.innerHTML = "<b>⚠ Couldn't download that video.</b> " + esc("The server returned an empty file — YouTube is temporarily blocking downloads right now. Try again in a few minutes, or try a TikTok or Instagram link instead.");
+      return false;
+    }
     // Fallback: let the browser handle it directly in a new tab.
     window.open(fileUrl, "_blank", "noopener");
     markStep("dl", "done");
