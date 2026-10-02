@@ -3,8 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SnapVault — Download Videos from YouTube, TikTok, Instagram & More</title>
-<meta name="description" content="SnapVault: free social video downloader. Paste a link from YouTube, TikTok, Instagram, X, Facebook, Reddit and 15+ platforms, pick quality, download.">
+<title>Free Video Downloader — Download YouTube, TikTok, Instagram Videos & MP3 | SnapVault</title>
+<meta name="description" content="SnapVault is a free online video downloader. Download videos from YouTube, TikTok, Instagram, Facebook, X, Reddit and 20+ platforms in HD, or save MP3 audio. No sign-up, no watermark.">
+<meta name="keywords" content="video downloader, free video downloader, online video downloader, youtube video downloader, tiktok video downloader, instagram video downloader, download youtube videos, tiktok no watermark, mp3 downloader, facebook video downloader">
+<link rel="canonical" href="https://snapvault-zaibi-bits-projects.vercel.app/">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0a0e14">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SnapVault">
+<meta property="og:title" content="Free Video Downloader — YouTube, TikTok, Instagram & More">
+<meta property="og:description" content="Paste a link, pick quality, download. Free online video downloader for 20+ platforms. No sign-up, no watermark.">
+<meta property="og:url" content="https://snapvault-zaibi-bits-projects.vercel.app/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Free Video Downloader — YouTube, TikTok, Instagram & More">
+<meta name="twitter:description" content="Paste a link, pick quality, download. Free online video downloader for 20+ platforms. No sign-up, no watermark.">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"SnapVault — Free Video Downloader","url":"https://snapvault-zaibi-bits-projects.vercel.app/","applicationCategory":"MultimediaApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free online video downloader for YouTube, TikTok, Instagram, Facebook, X, Reddit and 20+ platforms. Download HD video or MP3 audio with no sign-up and no watermark."}
+</script>
 <style>
 :root{
   --bg:#0a0e14; --panel:#10151d; --panel2:#151c27; --border:#1f2937;
@@ -85,6 +100,8 @@ p.sub{color:var(--muted);font-size:15px;margin-bottom:18px}
 .faq{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:10px}
 .faq b{display:block;margin-bottom:4px;font-size:15px}
 .faq p{font-size:14px;color:var(--muted)}
+.adslot{display:flex;justify-content:center;align-items:center;margin:30px 0;overflow:hidden}
+.adslot:empty{display:none}
 footer{border-top:1px solid var(--border);margin-top:56px;padding:26px 0 40px;color:var(--muted);font-size:13px;text-align:center}
 footer .fair{max-width:640px;margin:0 auto 12px;background:rgba(255,176,32,.06);border:1px solid rgba(255,176,32,.3);border-radius:12px;padding:14px 18px;text-align:left}
 @media(max-width:600px){.urlrow{flex-direction:column}.btn-paste{padding:13px}}
@@ -99,8 +116,8 @@ footer .fair{max-width:640px;margin:0 auto 12px;background:rgba(255,176,32,.06);
 </header>
 
 <div class="hero">
-  <h1>Download videos from <span class="grad">anywhere</span></h1>
-  <p>Paste a link from YouTube, TikTok, Instagram, X, Facebook, Reddit and 15+ more platforms. Pick video or MP3 audio, choose quality, hit download. Free, no sign-up, no watermark.</p>
+  <h1>Free Online <span class="grad">Video Downloader</span></h1>
+  <p>Download videos from YouTube, TikTok, Instagram, X, Facebook, Reddit and 15+ more platforms. Paste a link, pick video or MP3 audio, choose quality, hit download. Free, no sign-up, no watermark.</p>
 </div>
 
 <div class="card">
@@ -143,6 +160,9 @@ footer .fair{max-width:640px;margin:0 auto 12px;background:rgba(255,176,32,.06);
   <div id="error"></div>
 </div>
 
+<!-- ADSTERRA AD SLOT 1 (paste ad unit code inside the div below) -->
+<div class="adslot" id="adslot-1"></div>
+
 <h2 class="sec">📜 Recent downloads</h2>
 <p class="sub">Saved only in this browser — nothing is uploaded or tracked.</p>
 <div id="history"></div>
@@ -159,11 +179,18 @@ footer .fair{max-width:640px;margin:0 auto 12px;background:rgba(255,176,32,.06);
   <div class="s"><div class="n">3</div><b>Download</b><p>The file is fetched and saved straight to your device.</p></div>
 </div>
 
+<!-- ADSTERRA AD SLOT 2 (paste ad unit code inside the div below) -->
+<div class="adslot" id="adslot-2"></div>
+
 <h2 class="sec">❓ FAQ</h2>
 <div class="faq"><b>Is it really free? Any limits?</b><p>Yes — free, no sign-up. The engine is community-run, so if one server is busy SnapVault automatically tries another.</p></div>
 <div class="faq"><b>Why did my link fail?</b><p>Private, login-only, or deleted posts can't be fetched — only public content works. Age-restricted YouTube videos may also fail.</p></div>
 <div class="faq"><b>Does TikTok keep its watermark?</b><p>No — TikTok downloads come watermark-free by default.</p></div>
 <div class="faq"><b>Where do my files go?</b><p>Straight to your device's normal download folder. Your history stays in this browser only.</p></div>
+<div class="faq"><b>Do I need to install anything?</b><p>No. SnapVault is a web-based video downloader — it runs entirely in your browser on phone, tablet, or desktop, so there's nothing to install and no extensions needed.</p></div>
+
+<!-- ADSTERRA AD SLOT 3 (paste ad unit code inside the div below) -->
+<div class="adslot" id="adslot-3"></div>
 
 <footer>
   <div class="fair">⚖️ <b>Fair-use note:</b> only download videos you have the right to save — your own content, or content the creator allows to be downloaded. Respect creators and their work.</div>
