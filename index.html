@@ -292,20 +292,20 @@ function selectPlatform(name) {
     urlInput.placeholder = p.ph;
     $("platTip").textContent = p.tip;
   } else {
-    $("platTitle").textContent = "Download videos from anywhere";
+    $("platTitle").textContent = "👆 Select a platform above to start";
     urlInput.placeholder = DEFAULT_PH;
-    $("platTip").textContent = "";
+    $("platTip").textContent = "Pick a platform — YouTube, TikTok, Instagram and 7 more.";
   }
   renderTabs();
 }
 function renderTabs() {
   const box = $("platTabs");
-  box.innerHTML = `<button class="ptab${!activePlat ? " active" : ""}" data-p="__all">🌐 All</button>` +
+  box.innerHTML =
     PLAT_TABS.map(p => `<button class="ptab${activePlat === p.name ? " active" : ""}" data-p="${p.name}">${p.name}</button>`).join("");
   box.querySelectorAll(".ptab").forEach(b => {
-    const name = b.dataset.p === "__all" ? null : b.dataset.p;
+    const name = b.dataset.p;
     const p = PLAT_TABS.find(x => x.name === name);
-    if (name && b.classList.contains("active") && p) {
+    if (b.classList.contains("active") && p) {
       b.style.background = p.color;
       b.style.color = (p.name === "X") ? "#000" : "#fff";
     }
@@ -569,6 +569,11 @@ function showPicker(d, url) {
 goBtn.onclick = async () => {
   const url = urlInput.value.trim();
   resultBox.style.display = "none"; pickerBox.style.display = "none"; errorBox.style.display = "none";
+  if (!activePlat) {
+    errorBox.style.display = "block";
+    errorBox.innerHTML = "<b>👆 Hold on.</b> Select a platform above first — e.g. YouTube, TikTok or Instagram.";
+    return;
+  }
   if (!url || !/^https?:\/\//i.test(url)) {
     errorBox.style.display = "block";
     errorBox.innerHTML = "<b>⚠ Hold on.</b> Paste a valid video link first.";
