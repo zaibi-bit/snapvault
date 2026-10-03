@@ -381,6 +381,7 @@ const ERRORS = {
   "error.api.auth.jwt.missing": "Backend auth hiccup — trying another server…",
   "invalid url": "Please paste a valid http(s) link first.",
   "all instances failed": "All download servers are busy right now. Wait a minute and try again.",
+  "image-instead-of-video": "The servers could only find a photo for this link, not the video. If it's a video post, wait a bit and try again.",
 };
 function friendly(code) {
   return ERRORS[code] || ("Download failed (" + code + "). Try again in a bit.");
@@ -448,6 +449,16 @@ const CONTENT_ERRORS = new Set([
   "error.api.link.invalid",
 ]);
 
+// Video-only URL shapes: /reel/, /watch, /shorts/, /video/, ... For these the
+// engine must return video — a .jpg means it grabbed the cover photo instead.
+const VIDEO_URL_HINT = /\/(reel|reels|watch|shorts?|videos?|clips?|tv)\//i;
+const IMAGE_EXT = /\.(jpe?g|png|webp|gif|bmp|avif)(\?|#|$)/i;
+function isImageMismatch(d, url) {
+  if (mode === "audio") return false;
+  if (!VIDEO_URL_HINT.test(url)) return false;  // ambiguous link (e.g. /p/ post) — take what the engine gives
+  return IMAGE_EXT.test(String(d.filename || ""));
+}
+
 async function resolveLink(url, skip) {
   const body = {
     url,
@@ -460,7 +471,10 @@ async function resolveLink(url, skip) {
     if (skip && skip.includes(base)) continue;
     try {
       const d = await postJson(base + "/", body);
-      if (d.url) { d._base = base; return d; }                    // success
+      if (d.url) {
+        if (isImageMismatch(d, url)) { lastErr = "image-instead-of-video"; continue; }  // cover photo, not the video
+        d._base = base; return d;                                   // success
+      }
       const code = (d.error && d.error.code) || d.error || "unknown";
       if (CONTENT_ERRORS.has(code)) { d._base = base; return d; } // private/deleted — no point retrying
       lastErr = code;
