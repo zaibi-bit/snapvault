@@ -448,7 +448,7 @@ const CONTENT_ERRORS = new Set([
   "error.api.link.invalid",
 ]);
 
-async function resolveLink(url) {
+async function resolveLink(url, skip) {
   const body = {
     url,
     downloadMode: mode,
@@ -457,11 +457,12 @@ async function resolveLink(url) {
   };
   let lastErr = null;
   for (const base of INSTANCES) {
+    if (skip && skip.includes(base)) continue;
     try {
       const d = await postJson(base + "/", body);
-      if (d.url) return d;                                    // success
+      if (d.url) { d._base = base; return d; }                    // success
       const code = (d.error && d.error.code) || d.error || "unknown";
-      if (CONTENT_ERRORS.has(code)) return d;                 // private/deleted — no point retrying
+      if (CONTENT_ERRORS.has(code)) { d._base = base; return d; } // private/deleted — no point retrying
       lastErr = code;
     } catch (e) { lastErr = "network"; }
   }
@@ -472,13 +473,18 @@ async function resolveLink(url) {
       body: JSON.stringify(body),
     });
     const d = await r.json();
-    if (d.url) return d;
+    if (d.url) { d._base = "server"; return d; }
     lastErr = (d.error && d.error.code) || d.error || lastErr || "unknown";
   } catch (e) {}
   return { status: "error", error: lastErr || "all instances failed" };
 }
 
-async function downloadWithProgress(fileUrl, filename) {
+function showEmptyFileError() {
+  errorBox.style.display = "block";
+  errorBox.innerHTML = "<b>⚠ Couldn't download that video.</b> " + esc("The server returned an empty file — YouTube is temporarily blocking downloads right now. Try again in a few minutes, or try a TikTok or Instagram link instead.");
+}
+
+async function downloadWithProgress(fileUrl, filename, silentEmpty) {
   setStage(stepRow("dl", "Downloading — hang tight…", "") + `<div class="progress"><i id="bar"></i></div><div class="step" id="pct" style="font-size:13px"></div>`);
   try {
     const resp = await fetch(fileUrl);
@@ -517,8 +523,8 @@ async function downloadWithProgress(fileUrl, filename) {
     if (e && e.message === "empty-file") {
       markStep("dl", "fail");
       const pct = $("pct"); if (pct) pct.textContent = "";
-      errorBox.style.display = "block";
-      errorBox.innerHTML = "<b>⚠ Couldn't download that video.</b> " + esc("The server returned an empty file — YouTube is temporarily blocking downloads right now. Try again in a few minutes, or try a TikTok or Instagram link instead.");
+      if (silentEmpty) return "empty";   // caller decides: fail over to next instance
+      showEmptyFileError();
       return false;
     }
     // Fallback: let the browser handle it directly in a new tab.
@@ -595,7 +601,20 @@ goBtn.onclick = async () => {
     } else if (d.url) {
       showResult(d, url);
       // Auto-start the download, like every good downloader should.
-      await downloadWithProgress(d.url, d.filename);
+      // If a tunnel comes back empty (engine-side block), fail over to the
+      // next untried instance before telling the user it failed.
+      const tried = [d._base];
+      let dl = await downloadWithProgress(d.url, d.filename, true);
+      while (dl === "empty" && tried.length < INSTANCES.length + 1) {
+        setStage(stepRow("rs", "That server came back empty — trying a backup server…", ""));
+        const d2 = await resolveLink(url, tried);
+        if (!d2.url || d2.status === "error") break;
+        tried.push(d2._base);
+        markStep("rs", "done");
+        showResult(d2, url);
+        dl = await downloadWithProgress(d2.url, d2.filename, true);
+      }
+      if (dl === "empty") { markStep("rs", "fail"); showEmptyFileError(); }
     } else {
       throw new Error("empty response");
     }
