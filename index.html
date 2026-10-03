@@ -339,6 +339,10 @@ $("pasteBtn").onclick = async () => {
 
 /* ---------- mode / quality toggles ---------- */
 let mode = "auto";
+// Mobile browsers block programmatic downloads (popup blockers kill window.open
+// and blob-anchor clicks are unreliable), so on mobile the result card offers a
+// real tappable link instead of the fetch-and-save flow.
+const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
 $("modeSeg").querySelectorAll("button").forEach(b => {
   b.onclick = () => {
     $("modeSeg").querySelectorAll("button").forEach(x => x.classList.remove("active"));
@@ -473,6 +477,14 @@ async function resolveLink(url, skip) {
       const d = await postJson(base + "/", body);
       if (d.url) {
         if (isImageMismatch(d, url)) { lastErr = "image-instead-of-video"; continue; }  // cover photo, not the video
+        if (isMobile && d.status === "tunnel") {
+          // Mobile has no auto-download to catch empty tunnels, so probe cheaply
+          // with HEAD: a missing/zero content-length means an empty file.
+          try {
+            const h = await fetch(d.url, { method: "HEAD", cache: "no-store" });
+            if (!parseInt(h.headers.get("content-length") || "0", 10)) { lastErr = "empty-file"; continue; }
+          } catch (e) { /* probe failed — take the URL anyway */ }
+        }
         d._base = base; return d;                                   // success
       }
       const code = (d.error && d.error.code) || d.error || "unknown";
@@ -556,10 +568,13 @@ function showResult(d, url) {
     <div class="fname">📁 ${esc(d.filename)}</div>
     <div class="meta">${p ? esc(p.name) : "Video"} · ${mode === "audio" ? "MP3 audio" : $("quality").value === "max" ? "best quality" : $("quality").value + "p"} · ready</div>
     <div class="row">
-      <button class="btn btn-dl" id="dlNow">⬇ Download now</button>
+      ${isMobile
+        ? `<a class="btn btn-dl" href="${esc(d.url)}" download="${esc(d.filename)}" target="_blank" rel="noopener">⬇ Download now</a>`
+        : `<button class="btn btn-dl" id="dlNow">⬇ Download now</button>`}
       <button class="btn btn-ghost" id="copyLink">🔗 Copy direct link</button>
-    </div>`;
-  $("dlNow").onclick = () => downloadWithProgress(d.url, d.filename);
+    </div>
+    ${isMobile ? `<p class="sub" style="margin-top:10px">📱 Tap Download now — your phone will handle the file.</p>` : ""}`;
+  if (!isMobile) $("dlNow").onclick = () => downloadWithProgress(d.url, d.filename);
   $("copyLink").onclick = async () => {
     try { await navigator.clipboard.writeText(d.url); $("copyLink").textContent = "✓ Copied!"; }
     catch { prompt("Copy this link:", d.url); }
@@ -614,21 +629,25 @@ goBtn.onclick = async () => {
       showPicker(d, url);
     } else if (d.url) {
       showResult(d, url);
-      // Auto-start the download, like every good downloader should.
-      // If a tunnel comes back empty (engine-side block), fail over to the
-      // next untried instance before telling the user it failed.
-      const tried = [d._base];
-      let dl = await downloadWithProgress(d.url, d.filename, true);
-      while (dl === "empty" && tried.length < INSTANCES.length + 1) {
-        setStage(stepRow("rs", "That server came back empty — trying a backup server…", ""));
-        const d2 = await resolveLink(url, tried);
-        if (!d2.url || d2.status === "error") break;
-        tried.push(d2._base);
-        markStep("rs", "done");
-        showResult(d2, url);
-        dl = await downloadWithProgress(d2.url, d2.filename, true);
+      if (isMobile) {
+        setStage(stepRow("dl", "Ready — tap ⬇ Download now above.", "done"));
+      } else {
+        // Auto-start the download, like every good downloader should.
+        // If a tunnel comes back empty (engine-side block), fail over to the
+        // next untried instance before telling the user it failed.
+        const tried = [d._base];
+        let dl = await downloadWithProgress(d.url, d.filename, true);
+        while (dl === "empty" && tried.length < INSTANCES.length + 1) {
+          setStage(stepRow("rs", "That server came back empty — trying a backup server…", ""));
+          const d2 = await resolveLink(url, tried);
+          if (!d2.url || d2.status === "error") break;
+          tried.push(d2._base);
+          markStep("rs", "done");
+          showResult(d2, url);
+          dl = await downloadWithProgress(d2.url, d2.filename, true);
+        }
+        if (dl === "empty") { markStep("rs", "fail"); showEmptyFileError(); }
       }
-      if (dl === "empty") { markStep("rs", "fail"); showEmptyFileError(); }
     } else {
       throw new Error("empty response");
     }
