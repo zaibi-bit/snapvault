@@ -464,6 +464,25 @@ function isImageMismatch(d, url) {
 }
 
 async function resolveLink(url, skip) {
+  // TikTok fast path: TikWM returns direct no-watermark URLs with no key needed.
+  // Falls through to cobalt engines if it fails or was already tried.
+  if (!(skip && skip.includes("tikwm"))) {
+    const p = detectPlatform(url);
+    if (p && p.name === "TikTok") {
+      try {
+        const r = await fetch("https://www.tikwm.com/api/?url=" + encodeURIComponent(url), { cache: "no-store" });
+        const j = await r.json();
+        const dt = j && j.data;
+        const mediaUrl = mode === "audio" ? dt && dt.music : dt && (dt.hdplay || dt.play);
+        if (j && j.code === 0 && mediaUrl) {
+          const au = (dt && dt.author) || {};
+          return { status: "redirect", url: mediaUrl,
+                   filename: "tiktok_" + (au.unique_id || "video") + "_" + (dt.id || "download") + (mode === "audio" ? ".mp3" : ".mp4"),
+                   _base: "tikwm" };
+        }
+      } catch (e) { /* fall through to cobalt */ }
+    }
+  }
   const body = {
     url,
     downloadMode: mode,
@@ -637,7 +656,7 @@ goBtn.onclick = async () => {
         // next untried instance before telling the user it failed.
         const tried = [d._base];
         let dl = await downloadWithProgress(d.url, d.filename, true);
-        while (dl === "empty" && tried.length < INSTANCES.length + 1) {
+        while (dl === "empty" && tried.length < INSTANCES.length + 2) {
           setStage(stepRow("rs", "That server came back empty — trying a backup server…", ""));
           const d2 = await resolveLink(url, tried);
           if (!d2.url || d2.status === "error") break;
