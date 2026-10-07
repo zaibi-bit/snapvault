@@ -483,6 +483,29 @@ async function resolveLink(url, skip) {
       } catch (e) { /* fall through to cobalt */ }
     }
   }
+  // X/Twitter fast path: FxTwitter returns raw MP4 URLs, no key needed.
+  // Falls through to cobalt engines if it fails or was already tried.
+  if (!(skip && skip.includes("fxtwitter")) && mode !== "audio") {
+    const px = detectPlatform(url);
+    if (px && px.name === "X / Twitter") {
+      try {
+        const m = url.match(/(?:twitter\.com|x\.com)\/(\w+)\/status\/(\d+)/i);
+        if (m) {
+          const r = await fetch("https://api.fxtwitter.com/" + m[1] + "/status/" + m[2], { cache: "no-store" });
+          const j = await r.json();
+          const vids = j && j.tweet && j.tweet.media && j.tweet.media.videos;
+          if (j && j.code === 200 && vids && vids.length) {
+            const v = vids.slice().sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))[0];
+            if (v && v.url) {
+              return { status: "redirect", url: v.url,
+                       filename: "x_" + m[1] + "_" + m[2] + ".mp4",
+                       _base: "fxtwitter" };
+            }
+          }
+        }
+      } catch (e) { /* fall through to cobalt */ }
+    }
+  }
   const body = {
     url,
     downloadMode: mode,
